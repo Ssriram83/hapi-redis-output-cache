@@ -1,7 +1,7 @@
 {
-  "name": "hapi-redis-output-cache",
+  "name": "hapi-ioredis-output-cache",
   "version": "3.0.0",
-  "description": "Redis-backed output cache plugin for Hapi",
+  "description": "IO Redis-backed output cache plugin for Hapi",
   "engines": {
     "node": ">=4.0.0",
     "hapi": ">=9.0.0"
@@ -13,11 +13,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/ArnoldZokas/hapi-redis-output-cache"
+    "url": "git://github.com/Ssriram83/hapi-redis-output-cache"
   },
   "keywords": [
     "hapi",
-    "redis",
+    "io redis",
     "cache"
   ],
   "author": "Arnold Zokas",
@@ -27,6 +27,7 @@
   },
   "homepage": "https://github.com/ArnoldZokas/hapi-redis-output-cache",
   "dependencies": {
+    "ioredis": "^2.5.0",
     "joi": "^8.4.2",
     "redis": "^2.6.2",
     "underscore": "^1.8.3"

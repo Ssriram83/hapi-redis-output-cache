@@ -1,5 +1,6 @@
 # hapi-redis-output-cache
 > Redis-backed output cache plugin for Hapi
+NOTE: This is exactly same as parent except that it uses ioredis as redis client. This is to provide support for connecting to redis cluster.
 
 [![Build Status](https://semaphoreci.com/api/v1/ArnoldZokas/hapi-redis-output-cache/branches/master/shields_badge.svg)](https://semaphoreci.com/ArnoldZokas/hapi-redis-output-cache)[![Dependency Status](https://david-dm.org/ArnoldZokas/hapi-redis-output-cache.svg)](https://david-dm.org/ArnoldZokas/hapi-redis-output-cache) [![NPM version](https://badge.fury.io/js/hapi-redis-output-cache.svg)](http://badge.fury.io/js/hapi-redis-output-cache)
 
