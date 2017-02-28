@@ -57,6 +57,6 @@ module.exports = {
       const path      = normaliseUrl(req.url);
       const headers   = normaliseHeaders(req.headers, options.varyByHeaders);
 
-      return _.compact([partition, method, path, headers]).join('|');
+      return _.compact([partition, path, headers]).join('|');
   }
 };

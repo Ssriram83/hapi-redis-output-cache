@@ -7,6 +7,8 @@ const Redis = require('ioredis');
 exports.register = function (plugin, options, next) {
     const validation = joi.validate(options, require('./schema'));
     const attempt = options.attempt || 3;
+    const expiresIn = options.expiresIn || 60; // Default Expiry - 1 min
+
     const connectionOptions = {
         host: options.host,
         port: options.port || 6379,
@@ -22,17 +24,6 @@ exports.register = function (plugin, options, next) {
         return next(validation.error);
     }
 
-    // const client = require('redis').createClient({
-    //     host: options.host,
-    //     port: options.port || 6379,
-    //     retry_strategy: function (options) {
-    //         const reconnectAfter = Math.min(Math.pow(options.attempt, 2) * 100, 10000);
-    //         plugin.log('cache', `${options.error}. Attemting to reconnect in ${reconnectAfter}ms.`);
-    //
-    //         return reconnectAfter;
-    //     }
-    // });
-
     client.on('error', err => {
         plugin.log('cache', err);
     });
@@ -46,14 +37,13 @@ exports.register = function (plugin, options, next) {
         if(routeOptions.isCacheable !== true) {
             return reply.continue();
         }
-
         if(req.route.method !== 'get') {
             return reply.continue();
         }
 
         const cacheKey = cacheKeyGenerator.generateCacheKey(req, options);
 
-        if(client.connected) {
+        if(client.status === 'ready') {
             try {
                 client.get(cacheKey, (err, data) => {
                     if(err) {
@@ -64,14 +54,12 @@ exports.register = function (plugin, options, next) {
                     if(data) {
                         const cachedValue = JSON.parse(data);
                         req.outputCache = {
-                            data: cachedValue,
-                            isStale: true
+                            data: cachedValue
                         };
 
                         const currentTime = Math.floor(new Date() / 1000);
 
-                        if(cachedValue.expiresOn > currentTime) {
-                            req.outputCache.isStale = false;
+                        
 
                             const response = reply(cachedValue.payload);
                             response.code(cachedValue.statusCode);
@@ -84,7 +72,7 @@ exports.register = function (plugin, options, next) {
 
                             response.hold();
                             response.send();
-                        }
+                        
                     }
 
                     return reply.continue();
@@ -100,11 +88,23 @@ exports.register = function (plugin, options, next) {
 
     plugin.ext('onPreResponse', (req, reply) => {
         const routeOptions = req.route.settings.plugins['hapi-ioredis-output-cache'] || {};
-        if(routeOptions.isCacheable !== true) {
+        if(!routeOptions.isCacheable && !routeOptions.clearCache) {
             return reply.continue();
         }
+        if(req.route.method === 'post'){
+            return reply.continue();
+        }
+        // In case of update or delete clear the cache.
+        if((req.route.method === 'put' || req.route.method === 'delete') && routeOptions.clearCache) {
+        const cacheKey = cacheKeyGenerator.generateCacheKey(req, options);
+            if(client.status === 'ready') {
+                try {
+                    client.del(cacheKey);
+                } catch (err) {
+                    plugin.log('cache', `Unable to perform Del on ${options.host}:${options.port} for key ${cacheKey}. Redis returned: ${err}`);
+                }    
+            }            
 
-        if(req.route.method !== 'get') {
             return reply.continue();
         }
 
@@ -125,7 +125,7 @@ exports.register = function (plugin, options, next) {
             return reply.continue();
         }
 
-        if(req.outputCache && req.outputCache.isStale === false) {
+        if(req.outputCache) {
             return reply.continue();
         }
 
@@ -134,16 +134,13 @@ exports.register = function (plugin, options, next) {
         const cacheValue = {
             statusCode: req.response.statusCode,
             headers: req.response.headers,
-            payload: req.response.source,
-            expiresOn: Math.floor(new Date() / 1000) + options.staleIn
+            payload: req.response.source
+            //expiresOn: Math.floor(new Date() / 1000) + options.staleIn
         };
 
         if(client.status === 'ready') {
             try {
-                // plugin.log(cacheKey)
-                client.expire(cacheKey,options.expiresIn);
-                client.set(cacheKey, JSON.stringify(cacheValue));
-                // options.onCacheMiss(req, reply);
+                client.set(cacheKey, JSON.stringify(cacheValue),'EX',expiresIn);
             } catch (err) {
                 plugin.log('cache', `Unable to perform SETEX on ${options.host}:${options.port} for key ${cacheKey}. Redis returned: ${err}`);
             }

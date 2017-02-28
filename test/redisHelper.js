@@ -1,7 +1,7 @@
 'use strict';
 
 const cacheKeyGenerator = require('../src/cacheKeyGenerator');
-const redis             = require('redis').createClient(1234, '127.0.0.1');
+const redis             = require('redis').createClient(6379, '127.0.0.1');
 
 module.exports = {
     reset: seedValue => {
