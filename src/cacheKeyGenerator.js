@@ -58,5 +58,13 @@ module.exports = {
       const headers   = normaliseHeaders(req.headers, options.varyByHeaders);
 
       return _.compact([partition, path, headers]).join('|');
+  },
+  generateDelKey: (req, options) => {
+        const partition = options.partition || 'default';
+        //const method    = req.route.method.toLowerCase();
+
+        let path      = normaliseUrl(req.url);
+        //const headers   = normaliseHeaders(req.headers, options.varyByHeaders);
+        return [_.compact([partition, path]).join('|'),_.compact([partition, path.substring(0,path.lastIndexOf('/'))]).join('|')];
   }
 };
